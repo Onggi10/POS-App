@@ -7,6 +7,7 @@ import { useSelector } from 'react-redux';
 import { Platform } from 'react-native';
 import { RootState } from '../store';
 import { RootStackParamList, AuthStackParamList, MainTabParamList } from './types';
+import { COLORS, SPACING } from '../constants';
 
 // Auth Screens
 import LoginScreen from '../screens/Auth/LoginScreen';
@@ -20,16 +21,16 @@ import SettingsScreen from '../screens/Settings/SettingsScreen';
 
 // Icons
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../constants';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
+const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 
 function AuthNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Login" component={LoginScreen} />
-    </Stack.Navigator>
+    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+      <AuthStack.Screen name="Login" component={LoginScreen} />
+    </AuthStack.Navigator>
   );
 }
 
@@ -53,7 +54,7 @@ function MainNavigator() {
           } else if (route.name === 'Settings') {
             iconName = focused ? 'settings' : 'settings-outline';
           } else {
-            iconName = 'circle';
+            iconName = 'help-circle-outline';
           }
 
           return <Ionicons name={iconName} size={size} color={color} />;
@@ -63,8 +64,8 @@ function MainNavigator() {
         tabBarStyle: {
           backgroundColor: COLORS.white,
           borderTopColor: COLORS.gray[200],
-          paddingBottom: Platform.OS === 'ios' ? insets.bottom : 0,
-          height: Platform.OS === 'ios' ? 80 + insets.bottom : 60,
+          paddingBottom: insets.bottom || SPACING.sm,
+          height: 60 + insets.bottom,
         },
         headerStyle: {
           backgroundColor: COLORS.primary,

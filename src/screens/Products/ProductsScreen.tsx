@@ -15,6 +15,7 @@ import { addProduct, updateProduct, deleteProduct } from '../../store/slices/pro
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../../constants';
 import { Ionicons } from '@expo/vector-icons';
 import { Product } from '../../types';
+import { now } from '../../utils/dateUtils';
 
 export default function ProductsScreen() {
   const dispatch = useDispatch<AppDispatch>();
@@ -68,8 +69,8 @@ export default function ProductsScreen() {
       stock: parseInt(formData.stock) || 0,
       minStock: parseInt(formData.minStock) || 5,
       isActive: true,
-      createdAt: editingProduct?.createdAt || new Date(),
-      updatedAt: new Date(),
+      createdAt: editingProduct?.createdAt || (now() as any),
+      updatedAt: now() as any,
     };
 
     if (editingProduct) {

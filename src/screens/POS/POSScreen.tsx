@@ -7,7 +7,11 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
 import { addToCart, updateQuantity, removeFromCart, clearCart } from '../../store/slices/cartSlice';
@@ -27,6 +31,7 @@ export default function POSScreen() {
   const [showPayment, setShowPayment] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [paymentAmount, setPaymentAmount] = useState('');
+  const insets = useSafeAreaInsets();
 
   const filteredProducts = products.filter(product => {
     const matchesCategory = !selectedCategory || product.categoryId === selectedCategory;
@@ -140,66 +145,77 @@ export default function POSScreen() {
 
   if (showPayment) {
     return (
-      <View style={styles.paymentContainer}>
-        <View style={styles.paymentHeader}>
-          <TouchableOpacity
-            onPress={() => setShowPayment(false)}
-            style={styles.backButton}
-          >
-            <Ionicons name="arrow-back" size={24} color={COLORS.white} />
-          </TouchableOpacity>
-          <Text style={styles.paymentTitle}>Pembayaran</Text>
-        </View>
-
-        <View style={styles.paymentContent}>
-          <View style={styles.paymentSummary}>
-            <Text style={styles.summaryLabel}>Total:</Text>
-            <Text style={styles.summaryValue}>
-              Rp {total.toLocaleString('id-ID')}
-            </Text>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+      >
+        <View style={styles.paymentContainer}>
+          <View style={styles.paymentHeader}>
+            <TouchableOpacity
+              onPress={() => setShowPayment(false)}
+              style={styles.backButton}
+            >
+              <Ionicons name="arrow-back" size={24} color={COLORS.white} />
+            </TouchableOpacity>
+            <Text style={styles.paymentTitle}>Pembayaran</Text>
           </View>
 
-          <View style={styles.paymentMethods}>
-            {Object.entries({
-              cash: 'Tunai',
-              qris: 'QRIS',
-              ewallet: 'E-Wallet',
-              card: 'Kartu',
-            }).map(([method, label]) => (
-              <TouchableOpacity
-                key={method}
-                style={[
-                  styles.paymentMethod,
-                  paymentMethod === method && styles.paymentMethodSelected,
-                ]}
-                onPress={() => setPaymentMethod(method as PaymentMethod)}
-              >
-                <Text style={[
-                  styles.paymentMethodText,
-                  paymentMethod === method && styles.paymentMethodTextSelected,
-                ]}>
-                  {label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <TextInput
-            style={styles.paymentInput}
-            placeholder="Jumlah bayar"
-            keyboardType="numeric"
-            value={paymentAmount}
-            onChangeText={setPaymentAmount}
-          />
-
-          <TouchableOpacity
-            style={styles.payButton}
-            onPress={handlePayment}
+          <ScrollView
+            style={styles.paymentContent}
+            contentContainerStyle={{ flexGrow: 1, paddingBottom: insets.bottom + SPACING.xl }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.payButtonText}>Bayar</Text>
-          </TouchableOpacity>
+            <View style={styles.paymentSummary}>
+              <Text style={styles.summaryLabel}>Total:</Text>
+              <Text style={styles.summaryValue}>
+                Rp {total.toLocaleString('id-ID')}
+              </Text>
+            </View>
+
+            <View style={styles.paymentMethods}>
+              {Object.entries({
+                cash: 'Tunai',
+                qris: 'QRIS',
+                ewallet: 'E-Wallet',
+                card: 'Kartu',
+              }).map(([method, label]) => (
+                <TouchableOpacity
+                  key={method}
+                  style={[
+                    styles.paymentMethod,
+                    paymentMethod === method && styles.paymentMethodSelected,
+                  ]}
+                  onPress={() => setPaymentMethod(method as PaymentMethod)}
+                >
+                  <Text style={[
+                    styles.paymentMethodText,
+                    paymentMethod === method && styles.paymentMethodTextSelected,
+                  ]}>
+                    {label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TextInput
+              style={styles.paymentInput}
+              placeholder="Jumlah bayar"
+              keyboardType="numeric"
+              value={paymentAmount}
+              onChangeText={setPaymentAmount}
+            />
+
+            <TouchableOpacity
+              style={styles.payButton}
+              onPress={handlePayment}
+            >
+              <Text style={styles.payButtonText}>Bayar</Text>
+            </TouchableOpacity>
+          </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     );
   }
 
