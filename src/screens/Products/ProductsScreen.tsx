@@ -18,6 +18,7 @@ import { RootState, AppDispatch } from '../../store';
 import { addProductAsync, updateProductAsync, deleteProductAsync, fetchProducts, fetchCategories } from '../../store/slices/productSlice';
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS, IMAGE_BASE_PATH } from '../../constants';
 import { uploadApi } from '../../services/apiService';
+import { formatIDR } from '../../utils/currencyUtils';
 import { Ionicons } from '@expo/vector-icons';
 import { Product } from '../../types';
 import * as ImagePicker from 'expo-image-picker';
@@ -315,7 +316,7 @@ export default function ProductsScreen() {
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Harga:</Text>
             <Text style={styles.detailValue}>
-              Rp {item.price.toLocaleString('id-ID')}
+              {formatIDR(item.price)}
             </Text>
           </View>
           <View style={styles.detailRow}>
@@ -331,7 +332,7 @@ export default function ProductsScreen() {
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Harga Modal:</Text>
               <Text style={styles.detailValue}>
-                Rp {item.costPrice.toLocaleString('id-ID')}
+                {formatIDR(item.costPrice)}
               </Text>
             </View>
           )}

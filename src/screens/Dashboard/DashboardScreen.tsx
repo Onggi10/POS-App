@@ -10,6 +10,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "../../store";
 import { fetchTransactions } from "../../store/slices/transactionSlice";
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from "../../constants";
+import { formatIDR } from "../../utils/currencyUtils";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function DashboardScreen() {
@@ -40,7 +41,7 @@ export default function DashboardScreen() {
   const stats = [
     {
       title: "Penjualan Hari Ini",
-      value: `Rp ${todaySales.toLocaleString("id-ID")}`,
+      value: formatIDR(todaySales),
       icon: "cash-outline",
       color: COLORS.success,
     },

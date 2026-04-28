@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,9 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
 import { addToCart, updateQuantity, removeFromCart, clearCart } from '../../store/slices/cartSlice';
 import { createTransaction } from '../../store/slices/transactionSlice';
+import { fetchProducts, fetchCategories } from '../../store/slices/productSlice';
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS, IMAGE_BASE_PATH } from '../../constants';
+import { formatIDR } from '../../utils/currencyUtils';
 import { Ionicons } from '@expo/vector-icons';
 import { Product, CartItem, PaymentMethod } from '../../types';
 
@@ -41,6 +43,11 @@ export default function POSScreen() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [paymentAmount, setPaymentAmount] = useState('');
   const insets = useSafeAreaInsets();
+
+  useEffect(() => {
+    dispatch(fetchProducts());
+    dispatch(fetchCategories());
+  }, [dispatch]);
 
   const filteredProducts = products.filter(product => {
     const matchesCategory = !selectedCategory || product.categoryId === selectedCategory;
@@ -113,7 +120,7 @@ export default function POSScreen() {
         {item.name}
       </Text>
       <Text style={styles.productPrice}>
-        Rp {item.price.toLocaleString('id-ID')}
+        {formatIDR(item.price)}
       </Text>
       <Text style={[
         styles.productStock,
@@ -129,7 +136,7 @@ export default function POSScreen() {
       <View style={styles.cartItemInfo}>
         <Text style={styles.cartItemName}>{item.product.name}</Text>
         <Text style={styles.cartItemPrice}>
-          Rp {item.price.toLocaleString('id-ID')}
+          {formatIDR(item.price)}
         </Text>
       </View>
       <View style={styles.cartItemControls}>
@@ -183,7 +190,7 @@ export default function POSScreen() {
             <View style={styles.paymentSummary}>
               <Text style={styles.summaryLabel}>Total:</Text>
               <Text style={styles.summaryValue}>
-                Rp {total.toLocaleString('id-ID')}
+                {formatIDR(total)}
               </Text>
             </View>
 
@@ -302,7 +309,7 @@ export default function POSScreen() {
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Total:</Text>
               <Text style={styles.totalValue}>
-                Rp {total.toLocaleString('id-ID')}
+                {formatIDR(total)}
               </Text>
             </View>
             <TouchableOpacity

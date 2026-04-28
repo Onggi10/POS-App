@@ -10,6 +10,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
 import { fetchTransactions } from '../../store/slices/transactionSlice';
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../../constants';
+import { formatIDR } from '../../utils/currencyUtils';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function ReportsScreen() {
@@ -83,7 +84,7 @@ export default function ReportsScreen() {
   const reportCards = [
     {
       title: 'Total Penjualan',
-      value: `Rp ${totalSales.toLocaleString('id-ID')}`,
+      value: formatIDR(totalSales),
       icon: 'cash-outline',
       color: COLORS.success,
     },
@@ -95,7 +96,7 @@ export default function ReportsScreen() {
     },
     {
       title: 'Rata-rata Transaksi',
-      value: `Rp ${averageTransaction.toLocaleString('id-ID')}`,
+      value: formatIDR(averageTransaction),
       icon: 'calculator-outline',
       color: COLORS.warning,
     },
@@ -158,7 +159,7 @@ export default function ReportsScreen() {
               <View style={styles.productInfo}>
                 <Text style={styles.productName}>{product.name}</Text>
                 <Text style={styles.productStats}>
-                  {product.quantity} terjual • Rp {product.revenue.toLocaleString('id-ID')}
+                  {product.quantity} terjual • {formatIDR(product.revenue)}
                 </Text>
               </View>
               <View style={styles.rankBadge}>
@@ -200,7 +201,7 @@ export default function ReportsScreen() {
               </Text>
             </View>
             <Text style={styles.transactionAmount}>
-              Rp {transaction.total.toLocaleString('id-ID')}
+              {formatIDR(transaction.total)}
             </Text>
           </View>
         ))}
