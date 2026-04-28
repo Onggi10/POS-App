@@ -10,15 +10,24 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
 import { addToCart, updateQuantity, removeFromCart, clearCart } from '../../store/slices/cartSlice';
 import { createTransaction } from '../../store/slices/transactionSlice';
-import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../../constants';
+import { COLORS, SPACING, BORDER_RADIUS, SHADOWS, IMAGE_BASE_PATH } from '../../constants';
 import { Ionicons } from '@expo/vector-icons';
 import { Product, CartItem, PaymentMethod } from '../../types';
+
+const getProductImageUri = (image: string) => {
+  if (!image) return '';
+  if (image.startsWith('http') || image.startsWith('file://')) {
+    return image;
+  }
+  return `${IMAGE_BASE_PATH}/${image}`;
+};
 
 export default function POSScreen() {
   const dispatch = useDispatch<AppDispatch>();
@@ -93,8 +102,12 @@ export default function POSScreen() {
       onPress={() => handleAddToCart(item)}
       disabled={item.stock <= 0}
     >
-      <View style={styles.productImage}>
-        <Ionicons name="cube-outline" size={32} color={COLORS.gray[400]} />
+      <View style={styles.productImageContainer}>
+        {item.image ? (
+          <Image source={{ uri: getProductImageUri(item.image) }} style={styles.productImage} />
+        ) : (
+          <Ionicons name="cube-outline" size={32} color={COLORS.gray[400]} />
+        )}
       </View>
       <Text style={styles.productName} numberOfLines={2}>
         {item.name}
@@ -361,14 +374,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     ...SHADOWS.sm,
   },
-  productImage: {
-    width: 60,
-    height: 60,
-    borderRadius: BORDER_RADIUS.md,
+  productImageContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: BORDER_RADIUS.lg,
     backgroundColor: COLORS.gray[100],
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: SPACING.sm,
+    overflow: 'hidden',
+  },
+  productImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
   productName: {
     fontSize: 14,

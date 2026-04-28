@@ -148,13 +148,13 @@ export default function SettingsScreen() {
             <View key={item.key} style={styles.inputGroup}>
               <Text style={styles.inputLabel}>{item.label}</Text>
               <TextInput
-                style={[styles.input, item.multiline && styles.multilineInput]}
+                style={[styles.input, (item as any).multiline && styles.multilineInput]}
                 value={item.value}
                 onChangeText={(text) => setFormData({...formData, [item.key]: text})}
                 placeholder={item.placeholder}
-                keyboardType={item.keyboardType || 'default'}
-                multiline={item.multiline}
-                numberOfLines={item.multiline ? 3 : 1}
+                keyboardType={(item as any).keyboardType || 'default'}
+                multiline={(item as any).multiline}
+                numberOfLines={(item as any).multiline ? 3 : 1}
               />
             </View>
           ))}

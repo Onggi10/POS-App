@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -6,17 +6,23 @@ import {
   ScrollView,
   TouchableOpacity,
 } from "react-native";
-import { useSelector } from "react-redux";
-import { RootState } from "../../store";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState, AppDispatch } from "../../store";
+import { fetchTransactions } from "../../store/slices/transactionSlice";
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from "../../constants";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function DashboardScreen() {
+  const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
   const { transactions } = useSelector(
     (state: RootState) => state.transactions,
   );
   const { products } = useSelector((state: RootState) => state.products);
+
+  useEffect(() => {
+    dispatch(fetchTransactions());
+  }, [dispatch]);
 
   // Calculate today's stats
   const today = new Date();

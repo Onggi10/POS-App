@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,14 +6,20 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../store';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState, AppDispatch } from '../../store';
+import { fetchTransactions } from '../../store/slices/transactionSlice';
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../../constants';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function ReportsScreen() {
+  const dispatch = useDispatch<AppDispatch>();
   const { transactions } = useSelector((state: RootState) => state.transactions);
   const { products } = useSelector((state: RootState) => state.products);
+
+  useEffect(() => {
+    dispatch(fetchTransactions());
+  }, [dispatch]);
 
   const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'week' | 'month'>('today');
 
@@ -34,10 +40,10 @@ export default function ReportsScreen() {
         break;
     }
 
-    return transactions.filter(t =>
-      t.createdAt >= startDate &&
-      t.status === 'completed'
-    );
+    return transactions.filter(t => {
+      const createdAt = new Date(t.createdAt);
+      return createdAt >= startDate && t.status === 'completed';
+    });
   };
 
   const filteredTransactions = getFilteredTransactions();

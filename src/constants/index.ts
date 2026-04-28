@@ -36,6 +36,10 @@ export const COLORS = {
   }
 };
 
+export const IMAGE_BASE_PATH = __DEV__
+  ? 'http://localhost:3000/images/products'
+  : 'https://your-production-domain.com/images/products';
+
 export const FONTS = {
   regular: 'System',
   medium: 'System',

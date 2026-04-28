@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { Transaction, TransactionState, CartItem, PaymentMethod } from '../../types';
-import { now } from '../../utils/dateUtils';
-import { store } from '../index';
+import { transactionsApi } from '../../services/apiService';
 
 // Mock transactions
 const MOCK_TRANSACTIONS: Transaction[] = [
@@ -22,12 +21,12 @@ const MOCK_TRANSACTIONS: Transaction[] = [
       email: 'kasir@pos.com',
       name: 'Kasir',
       role: 'cashier',
-      createdAt: now() as any,
-      updatedAt: now() as any,
+      createdAt: new Date() as any,
+      updatedAt: new Date() as any,
     },
     status: 'completed',
-    createdAt: now() as any,
-    updatedAt: now() as any,
+    createdAt: new Date() as any,
+    updatedAt: new Date() as any,
   },
 ];
 
@@ -37,6 +36,18 @@ const initialState: TransactionState = {
   isLoading: false,
   error: null,
 };
+
+export const fetchTransactions = createAsyncThunk(
+  'transactions/fetchTransactions',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await transactionsApi.getAll();
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Gagal mengambil data transaksi');
+    }
+  }
+);
 
 export const createTransaction = createAsyncThunk(
   'transactions/create',
@@ -48,40 +59,15 @@ export const createTransaction = createAsyncThunk(
     tax: number;
     discount: number;
   }) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    const { items, paymentMethod, paymentAmount, cashierId, tax, discount } = transactionData;
-    const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const total = subtotal + tax - discount;
-    const change = paymentAmount - total;
-
-    const transaction: Transaction = {
-      id: Date.now().toString(),
-      transactionNumber: `TRX${Date.now()}`,
-      items,
-      subtotal,
-      tax,
-      discount,
-      total,
-      paymentMethod,
-      paymentAmount,
-      change,
-      cashierId,
-      cashier: {
-        id: cashierId,
-        email: '',
-        name: 'Kasir',
-        role: 'cashier',
-        createdAt: now() as any,
-        updatedAt: now() as any,
-      },
-      status: 'completed',
-      createdAt: now() as any,
-      updatedAt: now() as any,
-    };
-
-    return transaction;
+    const response = await transactionsApi.create({
+      items: transactionData.items,
+      paymentMethod: transactionData.paymentMethod,
+      paymentAmount: transactionData.paymentAmount,
+      cashierId: transactionData.cashierId,
+      tax: transactionData.tax,
+      discount: transactionData.discount,
+    });
+    return response.data;
   }
 );
 
@@ -114,6 +100,19 @@ const transactionSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      .addCase(fetchTransactions.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchTransactions.fulfilled, (state, action: PayloadAction<Transaction[]>) => {
+        state.isLoading = false;
+        state.transactions = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchTransactions.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message || 'Gagal mengambil data transaksi';
+      })
       .addCase(createTransaction.pending, (state) => {
         state.isLoading = true;
         state.error = null;

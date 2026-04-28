@@ -40,6 +40,9 @@ export const store = configureStore({
           'auth/checkAuth/fulfilled',
           'auth/login/pending',
           'auth/login/fulfilled',
+          'transactions/create/pending',
+          'transactions/create/fulfilled',
+          'transactions/create/rejected',
         ],
         ignoredActionPaths: ['payload'],
         ignoredPaths: [

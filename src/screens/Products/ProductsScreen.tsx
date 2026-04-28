@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+  SafeAreaView,
   View,
   Text,
   StyleSheet,
@@ -8,13 +9,18 @@ import {
   TextInput,
   Alert,
   Modal,
+  Image,
+  Platform,
+  ScrollView,
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
 import { addProductAsync, updateProductAsync, deleteProductAsync, fetchProducts, fetchCategories } from '../../store/slices/productSlice';
-import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../../constants';
+import { COLORS, SPACING, BORDER_RADIUS, SHADOWS, IMAGE_BASE_PATH } from '../../constants';
+import { uploadApi } from '../../services/apiService';
 import { Ionicons } from '@expo/vector-icons';
 import { Product } from '../../types';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function ProductsScreen() {
   const dispatch = useDispatch<AppDispatch>();
@@ -32,6 +38,8 @@ export default function ProductsScreen() {
     costPrice: '',
     stock: '',
     minStock: '',
+    image: '',
+    imageUri: '',
   });
 
   // Fetch data saat component mount
@@ -53,6 +61,48 @@ export default function ProductsScreen() {
     product.sku.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const getFilenameFromUri = (uri: string) => {
+    const cleaned = uri.split('/').pop() || '';
+    return cleaned.replace('file://', '');
+  };
+
+  const getImageUri = (filename: string) => {
+    if (!filename) return '';
+    if (filename.startsWith('http') || filename.startsWith('file://')) {
+      return filename;
+    }
+    return `${IMAGE_BASE_PATH}/${filename}`;
+  };
+
+  const getMimeType = (filename: string) => {
+    const ext = filename.split('.').pop()?.toLowerCase();
+    switch (ext) {
+      case 'png': return 'image/png';
+      case 'jpg':
+      case 'jpeg': return 'image/jpeg';
+      case 'webp': return 'image/webp';
+      default: return 'image/jpeg';
+    }
+  };
+
+  const uploadImageIfNeeded = async (uri: string, filename: string) => {
+    if (!uri || !filename) return filename;
+    const isLocalFile = uri.startsWith('file://') || uri.startsWith('content://');
+    if (!isLocalFile) {
+      return filename;
+    }
+
+    const uploadForm = new FormData();
+    uploadForm.append('image', {
+      uri,
+      name: filename,
+      type: getMimeType(filename),
+    } as any);
+
+    const response = await uploadApi.image(uploadForm);
+    return response.data?.filename || filename;
+  };
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -62,11 +112,80 @@ export default function ProductsScreen() {
       costPrice: '',
       stock: '',
       minStock: '',
+      image: '',
+      imageUri: '',
     });
     setEditingProduct(null);
   };
 
-  const handleSave = () => {
+  // Image picker functions
+  const requestPermissions = async () => {
+    if (Platform.OS !== 'web') {
+      const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
+      const { status: libraryStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (cameraStatus !== 'granted' || libraryStatus !== 'granted') {
+        Alert.alert('Permissions needed', 'Camera and media library permissions are required to select images.');
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const pickImageFromGallery = async () => {
+    const hasPermission = await requestPermissions();
+    if (!hasPermission) return;
+
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      const uri = result.assets[0].uri;
+      setFormData(prev => ({
+        ...prev,
+        image: getFilenameFromUri(uri),
+        imageUri: uri,
+      }));
+    }
+  };
+
+  const takePhoto = async () => {
+    const hasPermission = await requestPermissions();
+    if (!hasPermission) return;
+
+    let result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      const uri = result.assets[0].uri;
+      setFormData(prev => ({
+        ...prev,
+        image: getFilenameFromUri(uri),
+        imageUri: uri,
+      }));
+    }
+  };
+
+  const showImagePickerOptions = () => {
+    Alert.alert(
+      'Pilih Gambar',
+      'Pilih sumber gambar',
+      [
+        { text: 'Kamera', onPress: takePhoto },
+        { text: 'Galeri', onPress: pickImageFromGallery },
+        { text: 'Batal', style: 'cancel' },
+      ]
+    );
+  };
+
+  const handleSave = async () => {
     if (!formData.name || !formData.sku || !formData.categoryId || !formData.price) {
       Alert.alert('Error', 'Mohon lengkapi semua field yang diperlukan');
       return;
@@ -87,6 +206,14 @@ export default function ProductsScreen() {
       return;
     }
 
+    let imageFilename = formData.image || '';
+    try {
+      imageFilename = await uploadImageIfNeeded(formData.imageUri, formData.image);
+    } catch (uploadError) {
+      Alert.alert('Error', 'Gagal mengunggah gambar produk. Coba lagi.');
+      return;
+    }
+
     const productData = {
       name: formData.name,
       sku: formData.sku,
@@ -95,6 +222,7 @@ export default function ProductsScreen() {
       cost_price: formData.costPrice ? parseFloat(formData.costPrice) : null,
       stock: parseInt(formData.stock) || 0,
       min_stock: parseInt(formData.minStock) || 5,
+      image: imageFilename,
       is_active: true,
     };
 
@@ -119,6 +247,7 @@ export default function ProductsScreen() {
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
+    const filename = product.image ? getFilenameFromUri(product.image) : '';
     setFormData({
       name: product.name,
       sku: product.sku,
@@ -127,6 +256,8 @@ export default function ProductsScreen() {
       costPrice: product.costPrice?.toString() || '',
       stock: product.stock.toString(),
       minStock: product.minStock.toString(),
+      image: filename,
+      imageUri: product.image ? getImageUri(product.image) : '',
     });
     setShowAddModal(true);
   };
@@ -178,6 +309,9 @@ export default function ProductsScreen() {
         </View>
 
         <View style={styles.productDetails}>
+          {item.image ? (
+            <Image source={{ uri: getImageUri(item.image) }} style={styles.productImage} />
+          ) : null}
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Harga:</Text>
             <Text style={styles.detailValue}>
@@ -247,7 +381,7 @@ export default function ProductsScreen() {
         animationType="slide"
         onRequestClose={() => setShowAddModal(false)}
       >
-        <View style={styles.modalContainer}>
+        <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>
               {editingProduct ? 'Edit Produk' : 'Tambah Produk'}
@@ -260,7 +394,7 @@ export default function ProductsScreen() {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.modalContent}>
+          <ScrollView contentContainerStyle={styles.modalScrollContent}>
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Nama Produk *</Text>
               <TextInput
@@ -350,7 +484,35 @@ export default function ProductsScreen() {
                 />
               </View>
             </View>
-          </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Gambar Produk</Text>
+              <TouchableOpacity
+                style={styles.imagePickerContainer}
+                onPress={showImagePickerOptions}
+              >
+                {formData.imageUri || formData.image ? (
+                  <View style={styles.imagePreviewContainer}>
+                    <Image
+                      source={{ uri: formData.imageUri || getImageUri(formData.image) }}
+                      style={styles.imagePreview}
+                    />
+                    <TouchableOpacity
+                      style={styles.removeImageButton}
+                      onPress={() => setFormData(prev => ({ ...prev, image: '', imageUri: '' }))}
+                    >
+                      <Ionicons name="close-circle" size={24} color={COLORS.danger} />
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <View style={styles.imagePlaceholder}>
+                    <Ionicons name="camera" size={48} color={COLORS.gray[400]} />
+                    <Text style={styles.imagePlaceholderText}>Tap untuk pilih gambar</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
 
           <View style={styles.modalFooter}>
             <TouchableOpacity
@@ -371,7 +533,7 @@ export default function ProductsScreen() {
               )}
             </TouchableOpacity>
           </View>
-        </View>
+        </SafeAreaView>
       </Modal>
     </View>
   );
@@ -464,6 +626,13 @@ const styles = StyleSheet.create({
   productDetails: {
     gap: SPACING.sm,
   },
+  productImage: {
+    width: '100%',
+    height: 160,
+    borderRadius: BORDER_RADIUS.lg,
+    marginBottom: SPACING.md,
+    backgroundColor: COLORS.gray[100],
+  },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -489,11 +658,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: SPACING.lg,
+    paddingTop: Platform.OS === 'ios' ? SPACING.xl + 6 : SPACING.lg,
+    paddingBottom: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    minHeight: 82,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.gray[200],
+    backgroundColor: COLORS.white,
   },
   modalTitle: {
+    flex: 1,
     fontSize: 18,
     fontWeight: '600',
     color: COLORS.pos.text,
@@ -524,6 +698,10 @@ const styles = StyleSheet.create({
   },
   inputRow: {
     flexDirection: 'row',
+  },
+  modalScrollContent: {
+    padding: SPACING.lg,
+    paddingBottom: SPACING.xl,
   },
   pickerContainer: {
     flexDirection: 'row',
@@ -580,5 +758,42 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: COLORS.white,
+  },
+  // Image picker styles
+  imagePickerContainer: {
+    borderWidth: 2,
+    borderColor: COLORS.gray[300],
+    borderStyle: 'dashed',
+    borderRadius: BORDER_RADIUS.md,
+    height: 120,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.gray[50],
+  },
+  imagePlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  imagePlaceholderText: {
+    marginTop: SPACING.sm,
+    fontSize: 14,
+    color: COLORS.gray[500],
+  },
+  imagePreviewContainer: {
+    position: 'relative',
+    width: '100%',
+    height: '100%',
+  },
+  imagePreview: {
+    width: '100%',
+    height: '100%',
+    borderRadius: BORDER_RADIUS.md,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
   },
 });

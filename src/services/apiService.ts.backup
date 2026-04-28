@@ -75,33 +75,6 @@ const transformUser = (user: any) => ({
   updatedAt: new Date(user.updatedAt || user.updated_at),
 });
 
-// Transform snake_case to camelCase for API responses
-const transformProduct = (product: any) => ({
-  id: product.id.toString(),
-  name: product.name,
-  description: product.description,
-  sku: product.sku,
-  categoryId: product.category_id?.toString(),
-  price: product.price,
-  costPrice: product.cost_price,
-  stock: product.stock,
-  minStock: product.min_stock,
-  image: product.image,
-  isActive: product.is_active,
-  createdAt: new Date(product.created_at),
-  updatedAt: new Date(product.updated_at),
-});
-
-const transformCategory = (category: any) => ({
-  id: category.id.toString(),
-  name: category.name,
-  description: category.description,
-  color: category.color,
-  icon: category.icon,
-  createdAt: new Date(category.created_at),
-  updatedAt: new Date(category.updated_at),
-});
-
 // ============ PRODUCTS API ============
 export const productsApi = {
   getAll: async () => {
