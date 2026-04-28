@@ -48,6 +48,7 @@ export const store = configureStore({
           'transactions.transactions',
           'transactions.currentTransaction',
           'auth.user',
+          'cart.items', // Cart items contain Product objects with Date fields
           'customers.customers',
         ],
       },

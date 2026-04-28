@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,15 +11,14 @@ import {
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
-import { addProduct, updateProduct, deleteProduct } from '../../store/slices/productSlice';
+import { addProductAsync, updateProductAsync, deleteProductAsync, fetchProducts, fetchCategories } from '../../store/slices/productSlice';
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../../constants';
 import { Ionicons } from '@expo/vector-icons';
 import { Product } from '../../types';
-import { now } from '../../utils/dateUtils';
 
 export default function ProductsScreen() {
   const dispatch = useDispatch<AppDispatch>();
-  const { products, categories } = useSelector((state: RootState) => state.products);
+  const { products, categories, isLoading, error } = useSelector((state: RootState) => state.products);
   const { user } = useSelector((state: RootState) => state.auth);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -34,6 +33,20 @@ export default function ProductsScreen() {
     stock: '',
     minStock: '',
   });
+
+  // Fetch data saat component mount
+  useEffect(() => {
+    dispatch(fetchProducts());
+    dispatch(fetchCategories());
+  }, [dispatch]);
+
+  // Handle error alerts
+  useEffect(() => {
+    if (error) {
+      Alert.alert('Error', error);
+      dispatch({ type: 'products/clearError' }); // Clear error after showing
+    }
+  }, [error, dispatch]);
 
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -59,26 +72,47 @@ export default function ProductsScreen() {
       return;
     }
 
-    const productData: Product = {
-      id: editingProduct?.id || Date.now().toString(),
+    if (isLoading) {
+      return; // Prevent multiple submissions
+    }
+
+    // Check if SKU already exists (case insensitive)
+    const existingProduct = products.find(p =>
+      p.sku.toLowerCase() === formData.sku.toLowerCase() &&
+      (!editingProduct || p.id !== editingProduct.id)
+    );
+
+    if (existingProduct) {
+      Alert.alert('Error', `SKU "${formData.sku}" sudah digunakan oleh produk "${existingProduct.name}". Mohon gunakan SKU yang berbeda.`);
+      return;
+    }
+
+    const productData = {
       name: formData.name,
       sku: formData.sku,
-      categoryId: formData.categoryId,
+      category_id: parseInt(formData.categoryId),
       price: parseFloat(formData.price),
-      costPrice: formData.costPrice ? parseFloat(formData.costPrice) : undefined,
+      cost_price: formData.costPrice ? parseFloat(formData.costPrice) : null,
       stock: parseInt(formData.stock) || 0,
-      minStock: parseInt(formData.minStock) || 5,
-      isActive: true,
-      createdAt: editingProduct?.createdAt || (now() as any),
-      updatedAt: now() as any,
+      min_stock: parseInt(formData.minStock) || 5,
+      is_active: true,
     };
 
     if (editingProduct) {
-      dispatch(updateProduct(productData));
+      dispatch(updateProductAsync({ id: editingProduct.id, data: productData })).then(() => {
+        // Refresh data after successful update
+        dispatch(fetchProducts());
+        dispatch(fetchCategories());
+      });
     } else {
-      dispatch(addProduct(productData));
+      dispatch(addProductAsync(productData)).then(() => {
+        // Refresh data after successful add
+        dispatch(fetchProducts());
+        dispatch(fetchCategories());
+      });
     }
 
+    // Close modal immediately, error will be shown via useEffect if any
     setShowAddModal(false);
     resetForm();
   };
@@ -106,7 +140,11 @@ export default function ProductsScreen() {
         {
           text: 'Hapus',
           style: 'destructive',
-          onPress: () => dispatch(deleteProduct(product.id)),
+          onPress: () => dispatch(deleteProductAsync(product.id)).then(() => {
+            // Refresh data after successful delete
+            dispatch(fetchProducts());
+            dispatch(fetchCategories());
+          }),
         },
       ]
     );
@@ -322,10 +360,15 @@ export default function ProductsScreen() {
               <Text style={styles.cancelButtonText}>Batal</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.saveButton}
+              style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
               onPress={handleSave}
+              disabled={isLoading}
             >
-              <Text style={styles.saveButtonText}>Simpan</Text>
+              {isLoading ? (
+                <Text style={styles.saveButtonText}>Menyimpan...</Text>
+              ) : (
+                <Text style={styles.saveButtonText}>Simpan</Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -529,6 +572,9 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.lg,
     borderRadius: BORDER_RADIUS.md,
     alignItems: 'center',
+  },
+  saveButtonDisabled: {
+    opacity: 0.6,
   },
   saveButtonText: {
     fontSize: 16,

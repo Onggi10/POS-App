@@ -1,119 +1,107 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { Product, Category, ProductState } from '../../types';
-import { now } from '../../utils/dateUtils';
+import { productsApi, categoriesApi } from '../../services/apiService';
 
-// Mock data
-const MOCK_CATEGORIES: Category[] = [
-  {
-    id: '1',
-    name: 'Makanan',
-    description: 'Makanan siap saji',
-    color: '#10B981',
-    icon: 'food',
-    createdAt: now() as any,
-    updatedAt: now() as any,
-  },
-  {
-    id: '2',
-    name: 'Minuman',
-    description: 'Minuman dingin dan panas',
-    color: '#3B82F6',
-    icon: 'coffee',
-    createdAt: now() as any,
-    updatedAt: now() as any,
-  },
-  {
-    id: '3',
-    name: 'Snack',
-    description: 'Camilan dan makanan ringan',
-    color: '#F59E0B',
-    icon: 'cookie',
-    createdAt: now() as any,
-    updatedAt: now() as any,
-  },
-];
+// Async thunks untuk fetch data dari API
+export const fetchProducts = createAsyncThunk(
+  'products/fetchProducts',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await productsApi.getAll();
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Gagal mengambil data produk');
+    }
+  }
+);
 
-const MOCK_PRODUCTS: Product[] = [
-  {
-    id: '1',
-    name: 'Nasi Goreng',
-    description: 'Nasi goreng spesial dengan telur dan ayam',
-    sku: 'NG001',
-    categoryId: '1',
-    price: 25000,
-    costPrice: 15000,
-    stock: 15,
-    minStock: 5,
-    image: 'https://via.placeholder.com/150',
-    isActive: true,
-    createdAt: now() as any,
-    updatedAt: now() as any,
-  },
-  {
-    id: '2',
-    name: 'Es Teh Manis',
-    description: 'Teh manis dingin segar',
-    sku: 'ET001',
-    categoryId: '2',
-    price: 5000,
-    costPrice: 2000,
-    stock: 50,
-    minStock: 10,
-    image: 'https://via.placeholder.com/150',
-    isActive: true,
-    createdAt: now() as any,
-    updatedAt: now() as any,
-  },
-  {
-    id: '3',
-    name: 'Keripik Kentang',
-    description: 'Keripik kentang renyah original',
-    sku: 'KK001',
-    categoryId: '3',
-    price: 15000,
-    costPrice: 8000,
-    stock: 8,
-    minStock: 5,
-    image: 'https://via.placeholder.com/150',
-    isActive: true,
-    createdAt: now() as any,
-    updatedAt: now() as any,
-  },
-  {
-    id: '4',
-    name: 'Ayam Bakar',
-    description: 'Ayam bakar madu dengan sambal',
-    sku: 'AB001',
-    categoryId: '1',
-    price: 35000,
-    costPrice: 20000,
-    stock: 12,
-    minStock: 3,
-    image: 'https://via.placeholder.com/150',
-    isActive: true,
-    createdAt: now() as any,
-    updatedAt: now() as any,
-  },
-  {
-    id: '5',
-    name: 'Jus Jeruk',
-    description: 'Jus jeruk segar tanpa gula',
-    sku: 'JJ001',
-    categoryId: '2',
-    price: 12000,
-    costPrice: 6000,
-    stock: 25,
-    minStock: 8,
-    image: 'https://via.placeholder.com/150',
-    isActive: true,
-    createdAt: now() as any,
-    updatedAt: now() as any,
-  },
-];
+export const fetchCategories = createAsyncThunk(
+  'products/fetchCategories',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await categoriesApi.getAll();
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Gagal mengambil data kategori');
+    }
+  }
+);
+
+export const addProductAsync = createAsyncThunk(
+  'products/addProductAsync',
+  async (product: any, { rejectWithValue }) => {
+    try {
+      const response = await productsApi.create(product);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Gagal menambah produk');
+    }
+  }
+);
+
+export const updateProductAsync = createAsyncThunk(
+  'products/updateProductAsync',
+  async ({ id, data }: { id: string; data: any }, { rejectWithValue }) => {
+    try {
+      const response = await productsApi.update(id, data);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Gagal mengupdate produk');
+    }
+  }
+);
+
+export const deleteProductAsync = createAsyncThunk(
+  'products/deleteProductAsync',
+  async (id: string, { rejectWithValue }) => {
+    try {
+      await productsApi.delete(id);
+      return id;
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Gagal menghapus produk');
+    }
+  }
+);
+
+export const addCategoryAsync = createAsyncThunk(
+  'products/addCategoryAsync',
+  async (category: any, { rejectWithValue }) => {
+    try {
+      const response = await categoriesApi.create(category);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Gagal menambah kategori');
+    }
+  }
+);
+
+export const updateCategoryAsync = createAsyncThunk(
+  'products/updateCategoryAsync',
+  async ({ id, data }: { id: string; data: any }, { rejectWithValue }) => {
+    try {
+      const response = await categoriesApi.update(id, data);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Gagal mengupdate kategori');
+    }
+  }
+);
+
+export const deleteCategoryAsync = createAsyncThunk(
+  'products/deleteCategoryAsync',
+  async (id: string, { rejectWithValue }) => {
+    try {
+      await categoriesApi.delete(id);
+      return id;
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Gagal menghapus kategori');
+    }
+  }
+);
 
 const initialState: ProductState = {
-  products: MOCK_PRODUCTS,
-  categories: MOCK_CATEGORIES,
+  products: [],
+  categories: [],
   isLoading: false,
   error: null,
 };
@@ -122,52 +110,89 @@ const productSlice = createSlice({
   name: 'products',
   initialState,
   reducers: {
-    addProduct: (state, action: PayloadAction<Product>) => {
-      state.products.push(action.payload);
+    clearError: (state) => {
+      state.error = null;
     },
-    updateProduct: (state, action: PayloadAction<Product>) => {
+    refreshData: (state) => {
+      // This action will trigger data refresh in components
+    },
+  },
+  extraReducers: (builder) => {
+    // Fetch Products
+    builder.addCase(fetchProducts.pending, (state) => {
+      state.isLoading = true;
+      state.error = null;
+    });
+    builder.addCase(fetchProducts.fulfilled, (state, action) => {
+      state.isLoading = false;
+      state.products = action.payload;
+    });
+    builder.addCase(fetchProducts.rejected, (state, action) => {
+      state.isLoading = false;
+      state.error = action.payload as string;
+    });
+
+    // Fetch Categories
+    builder.addCase(fetchCategories.pending, (state) => {
+      state.isLoading = true;
+      state.error = null;
+    });
+    builder.addCase(fetchCategories.fulfilled, (state, action) => {
+      state.isLoading = false;
+      state.categories = action.payload;
+    });
+    builder.addCase(fetchCategories.rejected, (state, action) => {
+      state.isLoading = false;
+      state.error = action.payload as string;
+    });
+
+    // Add Product
+    builder.addCase(addProductAsync.pending, (state) => {
+      state.isLoading = true;
+      state.error = null;
+    });
+    builder.addCase(addProductAsync.fulfilled, (state, action) => {
+      state.isLoading = false;
+      state.products.push(action.payload);
+    });
+    builder.addCase(addProductAsync.rejected, (state, action) => {
+      state.isLoading = false;
+      state.error = action.payload as string;
+    });
+
+    // Update Product
+    builder.addCase(updateProductAsync.fulfilled, (state, action) => {
       const index = state.products.findIndex(p => p.id === action.payload.id);
       if (index !== -1) {
         state.products[index] = action.payload;
       }
-    },
-    deleteProduct: (state, action: PayloadAction<string>) => {
+    });
+
+    // Delete Product
+    builder.addCase(deleteProductAsync.fulfilled, (state, action) => {
       state.products = state.products.filter(p => p.id !== action.payload);
-    },
-    updateStock: (state, action: PayloadAction<{ productId: string; newStock: number }>) => {
-      const product = state.products.find(p => p.id === action.payload.productId);
-      if (product) {
-        product.stock = action.payload.newStock;
-        product.updatedAt = new Date();
-      }
-    },
-    addCategory: (state, action: PayloadAction<Category>) => {
+    });
+
+    // Add Category
+    builder.addCase(addCategoryAsync.fulfilled, (state, action) => {
       state.categories.push(action.payload);
-    },
-    updateCategory: (state, action: PayloadAction<Category>) => {
+    });
+
+    // Update Category
+    builder.addCase(updateCategoryAsync.fulfilled, (state, action) => {
       const index = state.categories.findIndex(c => c.id === action.payload.id);
       if (index !== -1) {
         state.categories[index] = action.payload;
       }
-    },
-    deleteCategory: (state, action: PayloadAction<string>) => {
+    });
+
+    // Delete Category
+    builder.addCase(deleteCategoryAsync.fulfilled, (state, action) => {
       state.categories = state.categories.filter(c => c.id !== action.payload);
-    },
-    clearError: (state) => {
-      state.error = null;
-    },
+    });
   },
 });
 
-export const {
-  addProduct,
-  updateProduct,
-  deleteProduct,
-  updateStock,
-  addCategory,
-  updateCategory,
-  deleteCategory,
-  clearError,
-} = productSlice.actions;
+export const { clearError, refreshData } = productSlice.actions;
 
 export default productSlice.reducer;
